@@ -153,6 +153,10 @@ html,body{height:100%;margin:0;background:#ffffff;overflow:hidden;overscroll-beh
 
 /* week: one box per day */
 .days{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.days.dim .day{opacity:.5}
+.wkcur{display:grid;gap:10px}
+.wkhead{display:flex;align-items:baseline;gap:8px;margin:6px 4px -2px;font:700 13px var(--sys);color:var(--muted)}
+.wkhead span{font:500 11.5px var(--mono)}
 .day{position:relative;display:grid;grid-template-columns:30px 30px minmax(0,1fr) 46px;align-items:center;gap:7px;padding:6px 4px 6px 8px;min-height:57px;background:var(--card);border:1.5px solid var(--rule);border-radius:15px;box-shadow:var(--shadow);cursor:pointer}
 .day.done{background:var(--done-bg);border-color:var(--done-line)}
 .day.today{border-color:var(--accent);box-shadow:0 0 0 1.5px var(--accent),var(--shadow)}
@@ -186,7 +190,7 @@ html,body{height:100%;margin:0;background:#ffffff;overflow:hidden;overscroll-beh
 .chip .ct{font:600 10.5px/1.1 var(--mono);opacity:.9;white-space:nowrap}
 .chip.pill{border-radius:22px;padding-left:12px;padding-right:10px}
 .chip.empty{align-items:center;background:transparent;color:var(--muted);box-shadow:none;border:1.5px dashed var(--steel-2);font:600 13px var(--sys)}
-.chip.empty.second{border-color:var(--rule);font-size:18px;font-weight:500}
+.chip.empty svg{width:17px;height:17px;opacity:.75}
 .chip.dragging{opacity:.3}
 .chip.big{flex-direction:row;align-items:center;gap:6px;width:auto;height:38px;padding:0 12px}
 .chip.big .cn{font-size:16.5px}
@@ -205,7 +209,7 @@ html,body{height:100%;margin:0;background:#ffffff;overflow:hidden;overscroll-beh
 .daydone{background:var(--done-bg);border-color:var(--done-line)}
 .bhead{display:flex;align-items:center;gap:8px;margin-top:8px}
 .bhead .sp{flex:1}
-.ord{font:700 11px/1 var(--mono);color:var(--muted);border:1.5px solid var(--rule);border-radius:7px;padding:5px 6px;background:var(--card);flex:none}
+.ord{display:inline-flex;align-items:center;gap:4px;font:700 11px/1 var(--mono);color:var(--muted);border:1.5px solid var(--rule);border-radius:7px;padding:5px 6px;background:var(--card);flex:none}
 .focus{font-size:13px;color:var(--muted);margin:-2px 2px 0}
 .focus em{font-style:normal;color:var(--good);font-weight:700}
 .items{list-style:none;margin:0;padding:0;display:grid;gap:7px}
@@ -263,7 +267,9 @@ html,body{height:100%;margin:0;background:#ffffff;overflow:hidden;overscroll-beh
 .sheet{position:absolute;left:0;right:0;bottom:0;max-height:88%;display:flex;flex-direction:column;background:var(--bg);border-radius:20px 20px 0 0;box-shadow:0 -10px 40px rgba(0,0,0,.2)}
 .sheet.enter{animation:up .22s ease-out}
 @keyframes up{from{transform:translateY(40px);opacity:.4}to{transform:none;opacity:1}}
-.grab{width:38px;height:5px;border-radius:3px;background:var(--rule);margin:7px auto 0}
+.grab{width:38px;height:5px;border-radius:3px;background:var(--steel-2);margin:8px auto 0;flex:none}
+.sheet-head,.grab{cursor:grab}
+.sheet{will-change:transform}
 .sheet-head{display:flex;align-items:flex-start;gap:10px;padding:10px 14px 8px}
 .sheet-head > div{flex:1;min-width:0}
 .sheet-head h2{font-size:20px;font-weight:700}
@@ -341,6 +347,9 @@ html,body{height:100%;margin:0;background:#ffffff;overflow:hidden;overscroll-beh
 .fig .guide{stroke:var(--steel-2)} .fig .kb-h{stroke:var(--steel)}
 .thumb .fig .mv,.thumb .fig .mvh{display:none}
 
+.ord svg{width:13px;height:13px}
+.btn svg{width:15px;height:15px;vertical-align:-2px}
+
 </style>
 </head>
 <body>
@@ -365,7 +374,7 @@ html,body{height:100%;margin:0;background:#ffffff;overflow:hidden;overscroll-beh
   const LOOP = D.loop, QUEST = D.quest;
   const DOW = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const ORD = ['1st', '2nd'];
+  const SLOT = ['Morning', 'Afternoon'];   // a day has two fixed slots: 0 = morning (left), 1 = afternoon (right)
   const REST_LABEL = { 180: '3 min', 150: '2–3 min', 120: '2 min', 90: '90 s', 75: '75 s', 60: '60 s', 45: '45 s', 30: '30 s' };
 
   /* ---------- icons ---------- */
@@ -378,6 +387,8 @@ html,body{height:100%;margin:0;background:#ffffff;overflow:hidden;overscroll-beh
     gear: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2.8v2.6M12 18.6v2.6M21.2 12h-2.6M5.4 12H2.8M18.5 5.5l-1.8 1.8M7.3 16.7l-1.8 1.8M18.5 18.5l-1.8-1.8M7.3 7.3L5.5 5.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
     left: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
     right: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    sun: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3v2.4M12 18.6V21M3 12h2.4M18.6 12H21M5.6 5.6l1.7 1.7M16.7 16.7l1.7 1.7M5.6 18.4l1.7-1.7M16.7 7.3l1.7-1.7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+    moon: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.5 14.2A8 8 0 0 1 9.8 4.5a8 8 0 1 0 9.7 9.7z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>',
     caret: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>',
     swap: '<svg viewBox="0 0 24 24" aria-hidden="true" width="14" height="14"><path d="M8 20V5M4 9l4-4 4 4M16 4v15M12 15l4 4 4-4" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
     week: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3.5 10h17M8 3v4M16 3v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
@@ -418,7 +429,10 @@ html,body{height:100%;margin:0;background:#ffffff;overflow:hidden;overscroll-beh
   const getDay = (st, d) => st.days[d] || (st.days[d] = { blocks: [], cheat: false });
   const kindOf = b => ACT[b.act].kind;
   const mkItem = (ex, sets) => ({ uid: uid(), ex, sets, done: new Array(sets).fill(false) });
-  const mkBlock = act => ({ id: uid(), act, items: null, done: false, mins: null });
+  const mkBlock = (act, slot) => ({ id: uid(), act, slot: slot === 0 ? 0 : 1, items: null, done: false, mins: null });
+  const blockAt = (d, pos) => d.blocks.find(b => b.slot === pos) || null;
+  const bySlot = d => { d.blocks.sort((x, y) => x.slot - y.slot); return d; };
+  const slotIcon = pos => (pos === 0 ? I.sun : I.moon);
   function tplItems(act) {
     const a = ACT[act], out = a.warm ? [mkItem('warm-up', 1)] : [];
     (a.items || []).forEach(p => out.push(mkItem(p[0], p[1])));
@@ -549,7 +563,7 @@ html,body{height:100%;margin:0;background:#ffffff;overflow:hidden;overscroll-beh
       let run = 0;
       for (let k = 1; k <= 4; k++) { if (actsOn(st, addDays(dt, -k)).some(a => a.loop)) run++; else break; }
       if (run >= 4) continue;
-      d.blocks.unshift(mkBlock(cand.id));
+      d.blocks.push(mkBlock(cand.id, blockAt(d, 1) ? 0 : 1)); bySlot(d);   // main sessions go to the afternoon when it is free
       ptr = (ptr + 1) % LOOP.length;
     }
   }
@@ -620,6 +634,12 @@ html,body{height:100%;margin:0;background:#ffffff;overflow:hidden;overscroll-beh
         if (!b.id) b.id = uid();
         if (b.items) b.items = b.items.filter(it => it && EX[it.ex] && Array.isArray(it.done));
       });
+      // fixed slots: older data had only an order, so main sessions go to the afternoon
+      const used = {}, legacy = d.blocks.filter(b => { if ((b.slot !== 0 && b.slot !== 1) || used[b.slot]) return true; used[b.slot] = 1; return false; });
+      if (legacy.length === 2 && ACT[legacy[0].act].loop && !ACT[legacy[1].act].loop) legacy.reverse();
+      const order = legacy.length === 1 ? [1, 0] : [0, 1];
+      legacy.forEach(b => { b.slot = order.find(x => !used[x]); used[b.slot] = 1; });
+      bySlot(d);
       d.cheat = !!d.cheat;
       st.days[dt] = d;
     });
@@ -639,7 +659,7 @@ html,body{height:100%;margin:0;background:#ffffff;overflow:hidden;overscroll-beh
     const mon = mondayOf(TODAY), plan = [['LA'], ['UA', 'yoga'], ['LB', 'MC'], ['UB', 'kondi'], ['martial'], ['C', 'run'], ['rest']];
     [addDays(mon, -7), mon].forEach(m => plan.forEach((acts, i) => {
       const dt = addDays(m, i), d = getDay(st, dt);
-      d.blocks = acts.map(mkBlock);
+      d.blocks = acts.map((a, k) => mkBlock(a, k === 0 ? 1 : 0)); bySlot(d);
       if (dt < TODAY) d.blocks.forEach(b => setBlockDone(b, true));
     }));
     const first = getDay(st, TODAY).blocks.find(b => kindOf(b) === 'lift');
@@ -721,8 +741,7 @@ html,body{height:100%;margin:0;background:#ffffff;overflow:hidden;overscroll-beh
   /* ---------- chrome ---------- */
   function topBar() {
     if (ui.view === 'week') {
-      const w = Math.round(dayDiff(ui.week, mondayOf(TODAY)) / 7);
-      const title = w === 0 ? 'This week' : w === 1 ? 'Next week' : w === -1 ? 'Last week' : 'Week of ' + fromISO(ui.week).getDate() + ' ' + MONTHS[fromISO(ui.week).getMonth()];
+      const title = weekName(ui.week);
       return '<header class="top"><h1>' + title + '<span class="sub">' + weekRange(ui.week) + (MODE === 'demo' ? ' · demo data' : '') + '</span></h1>' +
         hbtn('week-prev', 'Previous week', I.left) + hbtn('week-next', 'Next week', I.right) + hbtn('settings', 'Settings and backup', I.gear) + '</header>';
     }
@@ -769,26 +788,37 @@ html,body{height:100%;margin:0;background:#ffffff;overflow:hidden;overscroll-beh
     return '<button class="chip ' + actClass(a) + (a.name.length > 10 ? ' long' : '') + '" data-chip data-act="slot-open" data-date="' + dt + '" data-slot="' + i + '" aria-label="' +
       esc(a.name + ', ' + sub + (p.done ? ', done' : '') + '. Tap to change, drag to move.') + '"><span class="cn">' + (p.done ? I.check : '') + esc(a.name) + '</span><span class="ct">' + sub + '</span></button>';
   }
-  function emptyHTML(dt, next, first) {
-    return '<button class="chip empty' + (first ? '' : ' second') + '" data-act="slot-open" data-date="' + dt + '" data-slot="' + next + '" aria-label="' +
-      (first ? 'Free day: add a block' : 'Add a second block') + '">' + (first ? 'Free' : '+') + '</button>';
+  function emptyHTML(dt, pos) {
+    return '<button class="chip empty" data-act="slot-open" data-date="' + dt + '" data-slot="' + pos + '" aria-label="' + SLOT[pos] + ' is free: add a block">' + slotIcon(pos) + '</button>';
   }
   function dayRow(dt) {
     const d = peek(S, dt), st = dayState(S, dt), part = st.has && !st.done && st.frac > 0, n = d.blocks.length;
     const check = st.has
       ? '<button class="dcheck' + (st.done ? ' on' : part ? ' part' : '') + '" role="checkbox" aria-checked="' + st.done + '" data-act="day-check" data-date="' + dt + '" aria-label="' + dayLabel(dt) + ' done">' + (part ? Math.round(st.frac * 100) + '%' : I.check) + '</button>'
       : '<span class="dcheck none" aria-hidden="true"></span>';
-    const slot = pos => '<span class="slot" data-date="' + dt + '" data-pos="' + pos + '">' + (d.blocks[pos] ? chipHTML(dt, pos, d.blocks[pos]) : emptyHTML(dt, n, pos === 0)) + '</span>';
+    const slot = pos => '<span class="slot" data-date="' + dt + '" data-pos="' + pos + '">' + (blockAt(d, pos) ? chipHTML(dt, pos, blockAt(d, pos)) : emptyHTML(dt, pos)) + '</span>';
     return '<li class="day' + (dt === TODAY ? ' today' : '') + (st.done ? ' done' : '') + (dt < TODAY && st.has && !st.done ? ' missed' : '') + '" data-date="' + dt + '" data-act="open-day">' + check +
       '<span class="ddate"><b>' + DOW[dow(dt)] + '</b><span>' + fromISO(dt).getDate() + '</span></span>' +
       '<span class="slots">' + slot(0) + slot(1) + '</span>' +
       '<button class="dtime" data-act="open-day" data-date="' + dt + '" aria-label="Open ' + dayLabel(dt) + (st.mins ? ', ' + fmtMin(st.mins) + ' planned' : '') + '"><b>' + (st.mins ? fmtMin(st.mins) : '–') + '</b>' + I.right + '</button>' +
       (d.cheat ? '<span class="cheatflag">' + I.fork + 'cheat day</span>' : '') + '</li>';
   }
+  function weekName(m) {
+    const w = Math.round(dayDiff(m, mondayOf(TODAY)) / 7);
+    return (w === 0 ? 'This week' : w === 1 ? 'Next week' : w === -1 ? 'Last week' : 'Week of ' + fromISO(m).getDate() + ' ' + MONTHS[fromISO(m).getMonth()]);
+  }
+  function weekList(m, cur) {
+    let h = '<ol class="days ' + (cur ? 'cur' : 'dim') + '">';
+    for (let i = 0; i < 7; i++) h += dayRow(addDays(m, i));
+    return h + '</ol>';
+  }
+  /* The week in focus sits between the week before and the week after; scroll up or down to reach them. */
   function weekView() {
-    let h = questCard(ui.week) + planCard(ui.week) + '<ol class="days">';
-    for (let i = 0; i < 7; i++) h += dayRow(addDays(ui.week, i));
-    return h + '</ol><p class="hint">Tap a block to change it · drag it to move or swap</p>';
+    const prev = addDays(ui.week, -7), next = addDays(ui.week, 7);
+    const head = m => '<h3 class="wkhead">' + weekName(m) + '<span>' + weekRange(m) + '</span></h3>';
+    return head(prev) + weekList(prev, false) +
+      '<div class="wkcur">' + questCard(ui.week) + planCard(ui.week) + weekList(ui.week, true) + '<p class="hint">Tap a block to change it · drag it to move or swap</p></div>' +
+      head(next) + weekList(next, false);
   }
 
   /* ---------- day ---------- */
@@ -813,14 +843,14 @@ html,body{height:100%;margin:0;background:#ffffff;overflow:hidden;overscroll-beh
       (it.moved ? '<span class="tagm">moved</span>' : '') + '</div><p class="irx">' + esc(rxFor(ex, it.sets)) + '</p><div class="sets">' + boxes + pm + '</div></div>' +
       '<div class="iside">' + side + '</div></li>';
   }
-  function blockHTML(dt, i, b, n) {
-    const a = ACT[b.act], p = bProg(b), mins = bMins(b), at = ' data-date="' + dt + '" data-slot="' + i + '"';
+  function blockHTML(dt, b, n, first) {
+    const i = b.slot, a = ACT[b.act], p = bProg(b), mins = bMins(b), at = ' data-date="' + dt + '" data-slot="' + i + '"';
     let meta = '';
     if (a.kind === 'lift') meta = esc(a.focus) + ' · ' + (p.done ? '<em>done</em>' : p.n + '/' + p.t + ' sets') + ' · ' + mins + ' min';
     else if (a.kind === 'class') meta = (a.id === 'run' ? 'Cardio' : 'ASVZ class') + ' · ' + (p.done ? '<em>done</em> · ' : '') + mins + ' min';
-    let h = '<div class="bhead" data-block="' + b.id + '"><span class="ord">' + ORD[i] + '</span>' +
+    let h = '<div class="bhead" data-block="' + b.id + '"><span class="ord">' + slotIcon(i) + SLOT[i] + '</span>' +
       '<button class="chip big ' + actClass(a) + '" data-act="slot-open"' + at + ' aria-label="' + esc(a.name) + ': change, move or remove this block"><span class="cn">' + esc(a.name) + '</span>' + I.caret + '</button><span class="sp"></span>' +
-      (n > 1 && i === 0 ? '<button class="mini" data-act="swap-order" data-date="' + dt + '">' + I.swap + ' Swap order</button>' : '') + '</div>' +
+      (first ? '<button class="mini" data-act="swap-order" data-date="' + dt + '">' + I.swap + (n > 1 ? ' Swap' : ' To ' + SLOT[1 - i].toLowerCase()) + '</button>' : '') + '</div>' +
       (meta ? '<p class="focus">' + meta + '</p>' : '');
     if (a.kind === 'lift') {
       const items = itemsOf(b), ba = ' data-date="' + dt + '" data-bid="' + b.id + '"';
@@ -846,10 +876,11 @@ html,body{height:100%;margin:0;background:#ffffff;overflow:hidden;overscroll-beh
     }
     if (!d.blocks.length) {
       h += '<section class="card freecard"><h2>Free day</h2><p>Nothing planned. Add a session, a class or a rest day.</p>' +
-        '<button class="btn accent" data-act="slot-open" data-date="' + dt + '" data-slot="0">+ Add a block</button></section>';
+        '<div class="row-actions"><button class="btn" data-act="slot-open" data-date="' + dt + '" data-slot="0">' + I.sun + ' Morning</button>' +
+        '<button class="btn accent" data-act="slot-open" data-date="' + dt + '" data-slot="1">' + I.moon + ' Afternoon</button></div></section>';
     }
-    d.blocks.forEach((b, i) => { h += blockHTML(dt, i, b, d.blocks.length); });
-    if (d.blocks.length === 1) h += '<button class="btn ghost wide" data-act="slot-open" data-date="' + dt + '" data-slot="1">+ Add a second block</button>';
+    d.blocks.forEach((b, k) => { h += blockHTML(dt, b, d.blocks.length, k === 0); });
+    if (d.blocks.length === 1) { const fs = 1 - d.blocks[0].slot; h += '<button class="btn ghost wide" data-act="slot-open" data-date="' + dt + '" data-slot="' + fs + '">' + slotIcon(fs) + ' Add a' + (fs ? 'n afternoon' : ' morning') + ' block</button>'; }
     if (d.cheat) h += '<button class="btn small ghost wide" data-act="unuse-cheat" data-date="' + dt + '">Remove cheat day</button>';
     else if (tk > 0) h += '<button class="btn small ghost wide" data-act="use-cheat" data-date="' + dt + '">Make this a cheat day (' + tk + ' saved)</button>';
     return h;
@@ -890,8 +921,8 @@ html,body{height:100%;margin:0;background:#ffffff;overflow:hidden;overscroll-beh
     }).join('') + '</div></div>').join('');
   }
   function slotSheet(s) {
-    const dt = s.date, d = peek(S, dt), b = d.blocks[s.idx] || null;
-    if (!b) return sheetFrame('Add a block', dayLabel(dt) + ' · ' + ORD[Math.min(d.blocks.length, 1)] + ' block', pickerHTML(dt, d.blocks.length, null));
+    const dt = s.date, d = peek(S, dt), b = blockAt(d, s.idx);
+    if (!b) return sheetFrame('Add a block', dayLabel(dt) + ' · ' + SLOT[s.idx].toLowerCase(), pickerHTML(dt, s.idx, null));
     const a = ACT[b.act], p = bProg(b), mins = bMins(b), at = ' data-date="' + dt + '" data-slot="' + s.idx + '"';
     let top = '';
     if (a.kind === 'lift') {
@@ -905,10 +936,10 @@ html,body{height:100%;margin:0;background:#ffffff;overflow:hidden;overscroll-beh
       const t = addDays(wk, i);
       days += '<button data-act="slot-move"' + at + ' data-to="' + t + '"' + (t === dt ? ' class="cur" disabled' : '') + ' aria-label="Move to ' + dayLabel(t) + '"><b>' + DOW[i][0] + '</b>' + fromISO(t).getDate() + '</button>';
     }
-    const tail = '<div class="row-actions">' + (d.blocks.length > 1 ? '<button class="btn small" data-act="swap-order" data-date="' + dt + '">' + I.swap + ' Swap 1st and 2nd</button>' : '') +
+    const tail = '<div class="row-actions">' + '<button class="btn small" data-act="swap-order" data-date="' + dt + '">' + I.swap + (d.blocks.length > 1 ? ' Swap morning and afternoon' : ' Move to the ' + SLOT[1 - s.idx].toLowerCase()) + '</button>' +
       (a.kind === 'lift' && b.items ? '<button class="btn small" data-act="block-reset"' + at + '>Reset to standard</button>' : '') +
       '<button class="btn small danger" data-act="slot-clear"' + at + '>Remove</button></div>';
-    const sub = dayLabel(dt) + ' · ' + ORD[s.idx] + ' block' + (a.kind === 'lift' ? ' · ' + p.n + '/' + p.t + ' sets · ' + mins + ' min' : a.kind === 'class' ? ' · ' + mins + ' min' : '');
+    const sub = dayLabel(dt) + ' · ' + SLOT[s.idx].toLowerCase() + (a.kind === 'lift' ? ' · ' + p.n + '/' + p.t + ' sets · ' + mins + ' min' : a.kind === 'class' ? ' · ' + mins + ' min' : '');
     return sheetFrame(a.name, sub, top + pickerHTML(dt, s.idx, b.act) +
       '<div class="field"><label>Move to another day</label><div class="wkrow">' + days + '</div></div>' + tail);
   }
@@ -1154,23 +1185,21 @@ html,body{height:100%;margin:0;background:#ffffff;overflow:hidden;overscroll-beh
     });
     return estimate(items);
   }
+  /* Move the block in slot si of day sd to slot dp of day dd. A block already there swaps back. */
   function moveBlock(sd, si, dd, dp) {
-    const A = getDay(S, sd), blk = A.blocks[si];
+    const A = getDay(S, sd), blk = blockAt(A, si);
     if (!blk) return render();
-    const before = snap();
-    let msg;
-    if (sd === dd) {
-      if (A.blocks.length < 2 || dp === si) return render();
-      A.blocks.reverse();
-      msg = ACT[A.blocks[0].act].name + ' is now first on ' + dayLabel(sd);
-    } else {
-      const B = getDay(S, dd);
-      if (dp === null) dp = B.blocks.length < 2 ? B.blocks.length : Math.min(si, 1);
-      const other = B.blocks[dp];
-      if (other) { A.blocks[si] = other; B.blocks[dp] = blk; msg = ACT[blk.act].name + ' and ' + ACT[other.act].name + ' swapped'; }
-      else { A.blocks.splice(si, 1); B.blocks.push(blk); msg = ACT[blk.act].name + ' moved to ' + dayLabel(dd); }
-    }
-    commit(before, msg);
+    const B = getDay(S, dd);
+    if (dp === null) dp = !blockAt(B, si) ? si : !blockAt(B, 1 - si) ? 1 - si : si;
+    if (sd === dd && dp === si) return render();
+    const before = snap(), other = blockAt(B, dp);
+    A.blocks = A.blocks.filter(x => x !== blk);
+    B.blocks = B.blocks.filter(x => x !== blk && x !== other);
+    blk.slot = dp; B.blocks.push(blk);
+    if (other) { other.slot = si; A.blocks.push(other); }
+    bySlot(A); bySlot(B);
+    commit(before, other ? ACT[blk.act].name + ' and ' + ACT[other.act].name + ' swapped'
+      : ACT[blk.act].name + ' moved to ' + (sd === dd ? 'the ' + SLOT[dp].toLowerCase() : dayLabel(dd)));
   }
   function toastLite(msg) {
     const ov = root.querySelector('.overlay');
@@ -1202,49 +1231,49 @@ html,body{height:100%;margin:0;background:#ffffff;overflow:hidden;overscroll-beh
     },
     'slot-open'(ds) { ui.sheet = { type: 'slot', date: ds.date, idx: +ds.slot, fresh: true }; render(); },
     'slot-set'(ds) {
-      const d = getDay(S, ds.date), i = +ds.slot, old = d.blocks[i], before = snap();
+      const d = getDay(S, ds.date), i = +ds.slot === 0 ? 0 : 1, old = blockAt(d, i), before = snap();
       ui.sheet = null;
       if (old && old.act === ds.code) return render();
-      if (old) d.blocks[i] = mkBlock(ds.code); else d.blocks.push(mkBlock(ds.code));
+      d.blocks = d.blocks.filter(x => x !== old); d.blocks.push(mkBlock(ds.code, i)); bySlot(d);
       commit(before, old ? ACT[old.act].name + ' changed to ' + ACT[ds.code].name : ACT[ds.code].name + ' added to ' + dayLabel(ds.date));
     },
     'slot-clear'(ds) {
-      const d = getDay(S, ds.date), b = d.blocks[+ds.slot], before = snap();
+      const d = getDay(S, ds.date), b = blockAt(d, +ds.slot), before = snap();
       ui.sheet = null;
       if (!b) return render();
-      d.blocks.splice(+ds.slot, 1);
+      d.blocks = d.blocks.filter(x => x !== b);
       commit(before, ACT[b.act].name + ' removed from ' + dayLabel(ds.date));
     },
     'slot-move'(ds) { ui.sheet = null; moveBlock(ds.date, +ds.slot, ds.to, null); },
     'swap-order'(ds) {
       const d = getDay(S, ds.date);
-      if (d.blocks.length < 2) return;
-      const before = snap();
-      d.blocks.reverse(); ui.sheet = null;
-      commit(before, ACT[d.blocks[0].act].name + ' is now first on ' + dayLabel(ds.date));
+      if (!d.blocks.length) return;
+      const before = snap(), one = d.blocks.length === 1;
+      d.blocks.forEach(b => { b.slot = 1 - b.slot; }); bySlot(d); ui.sheet = null;
+      commit(before, one ? ACT[d.blocks[0].act].name + ' moved to the ' + SLOT[d.blocks[0].slot].toLowerCase() : 'Morning and afternoon swapped on ' + dayLabel(ds.date));
     },
     'block-done'(ds) {
-      const b = peek(S, ds.date).blocks[+ds.slot];
+      const b = blockAt(peek(S, ds.date), +ds.slot);
       if (!b) return;
       const before = snap();
       setBlockDone(b, !bProg(b).done);
       commit(before);
     },
     'block-reset'(ds) {
-      const b = peek(S, ds.date).blocks[+ds.slot];
+      const b = blockAt(peek(S, ds.date), +ds.slot);
       if (!b) return;
       const before = snap();
       b.items = null; ui.sheet = null;
       commit(before, ACT[b.act].name + ' reset to the standard plan');
     },
     'block-mins'(ds) {
-      const b = peek(S, ds.date).blocks[+ds.slot];
+      const b = blockAt(peek(S, ds.date), +ds.slot);
       if (!b) return;
       b.mins = Math.max(10, Math.min(240, (b.mins || ACT[b.act].mins) + (+ds.d)));
       commit();
     },
     'open-block'(ds) {
-      const b = peek(S, ds.date).blocks[+ds.slot];
+      const b = blockAt(peek(S, ds.date), +ds.slot);
       ui.day = ds.date; ui.view = 'day'; ui.sheet = null; ui.scrollTo = b ? b.id : null;
       render(true);
     },
@@ -1508,13 +1537,70 @@ html,body{height:100%;margin:0;background:#ffffff;overflow:hidden;overscroll-beh
       commit();
     }
   }
+  /* Pull a sheet down to close it: by touch anywhere on it (unless its content is scrolled), by mouse on its header. */
+  let pull = null;
+  function pullStart(sh, x, y) { pull = { el: sh, x0: x, y0: y, dy: 0, on: false, t0: Date.now(), sheet: ui.sheet }; }
+  function pullMove(x, y) {
+    if (pull.closing) return true;
+    const dy = y - pull.y0, dx = x - pull.x0;
+    if (!pull.on) {
+      if (dy <= 0 || Math.abs(dx) > Math.abs(dy)) { pull = null; return false; }   // scrolling the content or moving sideways
+      pull.on = true; pull.el.style.transition = 'none';
+    }
+    pull.dy = Math.max(0, dy);
+    pull.el.style.transform = 'translateY(' + pull.dy + 'px)';
+    const bd = root.querySelector('.backdrop');
+    if (bd) bd.style.opacity = String(Math.max(0.25, 1 - pull.dy / 420));
+    return true;
+  }
+  function pullEnd() {
+    const p = pull;
+    if (!p || p.closing) return;
+    pull = null;
+    if (!p.on) return;
+    const fast = p.dy > 28 && p.dy / Math.max(1, Date.now() - p.t0) > 0.55, bd = root.querySelector('.backdrop');
+    p.el.style.transition = 'transform .18s ease-out';
+    if (bd) bd.style.transition = 'opacity .18s';
+    if (p.dy > 90 || fast) {
+      p.el.style.transform = 'translateY(105%)';
+      if (bd) bd.style.opacity = '0';
+      pull = p; p.closing = true;   // keeps the page from redrawing under the closing sheet
+      setTimeout(() => { pull = null; if (ui.sheet === p.sheet) ui.sheet = null; render(); }, 170);
+    } else {
+      p.el.style.transform = '';
+      if (bd) bd.style.opacity = '';
+      setTimeout(() => { if (!pull && !drag) render(); }, 200);   // catch up on anything that changed during the pull
+    }
+  }
+  root.addEventListener('touchstart', e => {
+    const sh = e.target.closest ? e.target.closest('.sheet') : null;
+    if (!sh || e.touches.length !== 1 || drag || pull) return;
+    if (e.target.closest('textarea')) return;
+    const body = sh.querySelector('.sheet-body');
+    if (body && body.contains(e.target) && body.scrollTop > 0) return;
+    pullStart(sh, e.touches[0].clientX, e.touches[0].clientY);
+  }, { passive: true });
+  root.addEventListener('touchmove', e => {
+    if (!pull) return;
+    if (pullMove(e.touches[0].clientX, e.touches[0].clientY) && e.cancelable) e.preventDefault();
+  }, { passive: false });
+  root.addEventListener('touchend', pullEnd);
+  root.addEventListener('touchcancel', pullEnd);
+  root.addEventListener('mousedown', e => {
+    const hd = e.target.closest ? e.target.closest('.sheet-head, .grab') : null;
+    if (!hd || e.button > 0 || pull || e.target.closest('button')) return;
+    pullStart(hd.closest('.sheet'), e.clientX, e.clientY);
+    const mv = ev => { if (pull) pullMove(ev.clientX, ev.clientY); };
+    const up = () => { document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); if (pull && pull.on) { swallow = true; setTimeout(() => { swallow = false; }, 0); } pullEnd(); };
+    document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
+  });
   root.addEventListener('pointerup', e => endPointer(e, false));
   root.addEventListener('pointercancel', e => endPointer(e, true));
 
   /* ---------- render ---------- */
   let lastKey = '';
   function render(resetScroll) {
-    if (drag) return;
+    if (drag || (pull && pull.on)) return;
     const c0 = root.querySelector('.content'), sb0 = root.querySelector('.sheet-body');
     const key = ui.view + (ui.view === 'day' ? ui.day : ui.view === 'week' ? ui.week : ui.lib);
     const keep = c0 && key === lastKey && !resetScroll ? c0.scrollTop : 0;
@@ -1524,6 +1610,10 @@ html,body{height:100%;margin:0;background:#ffffff;overflow:hidden;overscroll-beh
       '<div class="overlay">' + sheetHTML() + timerHTML() + restHTML() + toastHTML() + '</div>';
     const c = root.querySelector('.content'), sb = root.querySelector('.sheet-body');
     c.scrollTop = keep;
+    if (ui.view === 'week' && (resetScroll || key !== lastKey)) {   // start on the week in focus; last week is above, next week below
+      const an = c.querySelector('.wkcur');
+      if (an) c.scrollTop = Math.max(0, an.offsetTop - c.offsetTop - 10);
+    }
     if (sb && keepSheet) sb.scrollTop = keepSheet;
     if (ui.scrollTo) {
       const el = root.querySelector('[data-block="' + ui.scrollTo + '"]');
